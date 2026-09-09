@@ -1,0 +1,9 @@
+{
+	"id": "obsidian-pdf-duh",
+	"name": "PDF Duh",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "PDF helpers for Obsidian.",
+	"author": "Your Name",
+	"isDesktopOnly": false
+}

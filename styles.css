@@ -1,0 +1,224 @@
+/* Styles declared in styles.css are loaded automatically with the plugin.
+   Use the manifest id as a prefix to avoid collisions with other plugins. */
+
+.pdf-duh-ribbon-class {
+	color: var(--text-accent);
+}
+
+.pdf-duh-list-view {
+	padding: 8px;
+}
+
+.pdf-duh-list-empty {
+	color: var(--text-muted);
+	padding: 16px;
+}
+
+.pdf-duh-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.pdf-duh-list-item {
+	padding: 6px 10px;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+}
+
+.pdf-duh-list-item:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.pdf-duh-list-item-name {
+	color: var(--text-normal);
+	font-weight: var(--font-medium);
+}
+
+.pdf-duh-list-item-path {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.pdf-duh-canvas {
+	background-color: white;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	margin-bottom: 8px;
+}
+
+.pdf-duh-viewer {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.pdf-duh-viewer-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 4px 8px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
+}
+
+.pdf-duh-viewer-toolbar-spacer {
+	flex: 1;
+}
+
+.pdf-duh-viewer-page-label {
+	min-width: 5em;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	user-select: none;
+}
+
+.pdf-duh-viewer-scroll {
+	flex: 1;
+	overflow: auto;
+	padding: 16px;
+	background-color: var(--background-secondary);
+	scrollbar-gutter: stable;
+	display: flex;
+	justify-content: safe center;
+	align-items: safe center;
+}
+
+.pdf-duh-viewer-canvas {
+	display: block;
+	flex-shrink: 0;
+	background-color: white;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.pdf-duh-metadata-view {
+	padding: 8px 12px;
+}
+
+.pdf-duh-metadata-empty {
+	color: var(--text-muted);
+	padding: 6px 4px;
+}
+
+.pdf-duh-metadata-tree {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.pdf-duh-metadata-outline-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 3px 4px;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	min-width: 0;
+}
+
+.pdf-duh-metadata-outline-row:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.pdf-duh-metadata-outline-row.is-current {
+	background-color: var(--background-modifier-active-hover);
+}
+
+.pdf-duh-metadata-outline-row.is-current .pdf-duh-metadata-outline-title {
+	color: var(--text-accent);
+}
+
+.pdf-duh-metadata-caret {
+	width: 14px;
+	flex-shrink: 0;
+	display: inline-flex;
+	justify-content: center;
+	color: var(--text-muted);
+}
+
+.pdf-duh-metadata-caret svg {
+	width: 12px;
+	height: 12px;
+}
+
+.pdf-duh-metadata-collapsible.is-open
+	> .pdf-duh-metadata-outline-row
+	.pdf-duh-metadata-caret
+	svg {
+	transform: rotate(90deg);
+}
+
+.pdf-duh-metadata-outline-item:not(.is-open)
+	+ .pdf-duh-metadata-outline-children {
+	display: none;
+}
+
+.pdf-duh-metadata-outline-title {
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	flex: 1;
+}
+
+.pdf-duh-metadata-outline-page {
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	flex-shrink: 0;
+}
+
+.pdf-duh-metadata-outline-children {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.pdf-duh-metadata-controls {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-bottom: 10px;
+	flex-shrink: 0;
+}
+
+.pdf-duh-metadata-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	min-height: 0;
+}
+
+.pdf-duh-metadata-actions:empty {
+	display: none;
+}
+
+.pdf-duh-metadata-search {
+	width: 100%;
+}
+
+.pdf-duh-metadata-no-matches {
+	color: var(--text-muted);
+	padding: 6px 4px;
+}
+
+.pdf-duh-metadata-tree.is-filtering .pdf-duh-metadata-outline-item {
+	display: none;
+}
+
+.pdf-duh-metadata-tree.is-filtering
+	.pdf-duh-metadata-outline-item.is-filter-match {
+	display: block;
+}
+
+.pdf-duh-metadata-tree.is-filtering .pdf-duh-metadata-outline-children {
+	display: none;
+}
+
+.pdf-duh-metadata-tree.is-filtering
+	.pdf-duh-metadata-outline-children.is-filter-visible {
+	display: flex;
+}
