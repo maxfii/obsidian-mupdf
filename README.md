@@ -12,3 +12,7 @@ i might add more features and break things.
 
 also, this is highly experimental AI slop, so it might break under your feet.
 when it does, please leave a GitHub Issue.
+
+***
+
+License: This project is licensed under the GNU AGPLv3 license. It uses MuPDF, which is licensed under GNU AGPLv3.
