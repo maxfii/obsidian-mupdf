@@ -95,22 +95,22 @@
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-.pdf-duh-metadata-view {
+.pdf-duh-metadata-view, .pdf-duh-outline-view {
 	padding: 8px 12px;
 }
 
-.pdf-duh-metadata-empty {
+.pdf-duh-tree-empty {
 	color: var(--text-muted);
 	padding: 6px 4px;
 }
 
-.pdf-duh-metadata-tree {
+.pdf-duh-tree {
 	display: flex;
 	flex-direction: column;
 	gap: 1px;
 }
 
-.pdf-duh-metadata-outline-row {
+.pdf-duh-tree-row {
 	display: flex;
 	align-items: center;
 	gap: 4px;
@@ -120,19 +120,19 @@
 	min-width: 0;
 }
 
-.pdf-duh-metadata-outline-row:hover {
+.pdf-duh-tree-row:hover {
 	background-color: var(--background-modifier-hover);
 }
 
-.pdf-duh-metadata-outline-row.is-current {
+.pdf-duh-tree-row.is-current {
 	background-color: var(--background-modifier-active-hover);
 }
 
-.pdf-duh-metadata-outline-row.is-current .pdf-duh-metadata-outline-title {
+.pdf-duh-tree-row.is-current .pdf-duh-tree-title {
 	color: var(--text-accent);
 }
 
-.pdf-duh-metadata-caret {
+.pdf-duh-tree-caret {
 	width: 14px;
 	flex-shrink: 0;
 	display: inline-flex;
@@ -140,24 +140,24 @@
 	color: var(--text-muted);
 }
 
-.pdf-duh-metadata-caret svg {
+.pdf-duh-tree-caret svg {
 	width: 12px;
 	height: 12px;
 }
 
-.pdf-duh-metadata-collapsible.is-open
-	> .pdf-duh-metadata-outline-row
-	.pdf-duh-metadata-caret
+.pdf-duh-tree-collapsible.is-open
+	> .pdf-duh-tree-row
+	.pdf-duh-tree-caret
 	svg {
 	transform: rotate(90deg);
 }
 
-.pdf-duh-metadata-outline-item:not(.is-open)
-	+ .pdf-duh-metadata-outline-children {
+.pdf-duh-tree-item:not(.is-open)
+	+ .pdf-duh-tree-children {
 	display: none;
 }
 
-.pdf-duh-metadata-outline-title {
+.pdf-duh-tree-title {
 	color: var(--text-normal);
 	white-space: nowrap;
 	overflow: hidden;
@@ -165,19 +165,19 @@
 	flex: 1;
 }
 
-.pdf-duh-metadata-outline-page {
+.pdf-duh-tree-page {
 	color: var(--text-faint);
 	font-size: var(--font-ui-smaller);
 	flex-shrink: 0;
 }
 
-.pdf-duh-metadata-outline-children {
+.pdf-duh-tree-children {
 	display: flex;
 	flex-direction: column;
 	gap: 1px;
 }
 
-.pdf-duh-metadata-controls {
+.pdf-duh-tree-controls {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
@@ -185,40 +185,68 @@
 	flex-shrink: 0;
 }
 
-.pdf-duh-metadata-actions {
+.pdf-duh-tree-actions {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 4px;
 	min-height: 0;
 }
 
-.pdf-duh-metadata-actions:empty {
+.pdf-duh-tree-actions:empty {
 	display: none;
 }
 
-.pdf-duh-metadata-search {
+.pdf-duh-tree-search {
 	width: 100%;
+	padding-right: 26px;
 }
 
-.pdf-duh-metadata-no-matches {
+.pdf-duh-tree-search-wrapper {
+	position: relative;
+}
+
+.pdf-duh-tree-search-clear {
+	position: absolute;
+	top: 50%;
+	right: 4px;
+	transform: translateY(-50%);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 2px;
+	border-radius: var(--radius-s);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.pdf-duh-tree-search-clear.is-visible {
+	display: flex;
+}
+
+.pdf-duh-tree-search-clear:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.pdf-duh-tree-no-matches {
 	color: var(--text-muted);
 	padding: 6px 4px;
 }
 
-.pdf-duh-metadata-tree.is-filtering .pdf-duh-metadata-outline-item {
+.pdf-duh-tree.is-filtering .pdf-duh-tree-item {
 	display: none;
 }
 
-.pdf-duh-metadata-tree.is-filtering
-	.pdf-duh-metadata-outline-item.is-filter-match {
+.pdf-duh-tree.is-filtering
+	.pdf-duh-tree-item.is-filter-match {
 	display: block;
 }
 
-.pdf-duh-metadata-tree.is-filtering .pdf-duh-metadata-outline-children {
+.pdf-duh-tree.is-filtering .pdf-duh-tree-children {
 	display: none;
 }
 
-.pdf-duh-metadata-tree.is-filtering
-	.pdf-duh-metadata-outline-children.is-filter-visible {
+.pdf-duh-tree.is-filtering
+	.pdf-duh-tree-children.is-filter-visible {
 	display: flex;
 }

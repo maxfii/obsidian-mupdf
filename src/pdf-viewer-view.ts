@@ -10,6 +10,25 @@ import type { OutlineItem } from './libmupdf';
 
 export const VIEW_TYPE_PDF_VIEWER = 'pdf-duh-viewer';
 
+/**
+ * The active PDF viewer, or the first open viewer with a document when no
+ * viewer tab is active.
+ */
+export function findPdfViewer(app: import('obsidian').App): PdfViewerView | null {
+	const activeView =
+		app.workspace.getActiveViewOfType<PdfViewerView>(PdfViewerView);
+	if (activeView?.doc) {
+		return activeView;
+	}
+	for (const leaf of app.workspace.getLeavesOfType(VIEW_TYPE_PDF_VIEWER)) {
+		const view = leaf.view;
+		if (view instanceof PdfViewerView && view.doc) {
+			return view;
+		}
+	}
+	return null;
+}
+
 export class PdfViewerView extends FileView {
 	private engine: MupdfEngine | null = null;
 	doc: MupdfDocument | null = null;
@@ -156,7 +175,7 @@ export class PdfViewerView extends FileView {
 			this.doc = this.engine.openDocument(new Uint8Array(data));
 			this.pageCount = this.doc.countPages();
 			await this.renderCurrent();
-			this.plugin.refreshPdfMetadataView();
+			this.plugin.refreshPdfStructureViews();
 		} catch (error) {
 			console.error('PDF Duh: failed to open PDF', error);
 			const message =
@@ -171,13 +190,13 @@ export class PdfViewerView extends FileView {
 		this.doc?.destroy();
 		this.doc = null;
 		this.pageCount = 0;
-		this.plugin.refreshPdfMetadataView();
+		this.plugin.refreshPdfStructureViews();
 	}
 
 	async onClose(): Promise<void> {
 		this.doc?.destroy();
 		this.doc = null;
-		this.plugin.refreshPdfMetadataView();
+		this.plugin.refreshPdfStructureViews();
 	}
 
 	async goToPage(index: number): Promise<void> {
@@ -186,7 +205,7 @@ export class PdfViewerView extends FileView {
 		}
 		this.pageIndex = index;
 		await this.renderCurrent();
-		this.plugin.updatePdfMetadataHighlight(this.pageIndex);
+		this.plugin.updatePdfPageHighlight(this.pageIndex);
 	}
 
 	/** Sorted, de-duplicated page indexes of every bookmark in the outline. */

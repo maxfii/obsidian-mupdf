@@ -1,7 +1,8 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
 import { PdfListView, VIEW_TYPE_PDF_LIST } from './pdf-list-view';
 import { PdfMetadataView, VIEW_TYPE_PDF_METADATA } from './pdf-metadata-view';
 import { PdfViewerView, VIEW_TYPE_PDF_VIEWER } from './pdf-viewer-view';
+import { PdfDuhOutlineView, VIEW_TYPE_OUTLINE } from './outline-view';
 
 /*
  * Remember when writing your own code:
@@ -58,11 +59,20 @@ export default class PdfDuhPlugin extends Plugin {
 			},
 		});
 
+		this.addCommand({
+			id: 'open-outline',
+			name: 'Open outline (PDF bookmarks in the Outline panel)',
+			callback: () => {
+				void this.activateOutlineView();
+			},
+		});
+
 		// Status bar item: text at the bottom-right of the window.
 		const statusBarItemEl = this.addStatusBarItem();
 		statusBarItemEl.setText('PDF Duh ready');
 
 		this.takeOverPdfExtension();
+		this.takeOverOutlineView();
 
 		// Commands appear in the command palette (Ctrl/Cmd+P).
 		// `editor` callbacks only fire when a Markdown editor is focused.
@@ -141,10 +151,79 @@ export default class PdfDuhPlugin extends Plugin {
 		workspace.revealLeaf(leaf);
 	}
 
-	/** Jump the (first) PDF viewer tab to the given page index. */
-	async jumpToPdfPage(pageIndex: number): Promise<void> {
+	/** Reuse an existing Outline tab if one is open, otherwise create it. */
+	async activateOutlineView(): Promise<void> {
 		const { workspace } = this.app;
-		const leaf = workspace.getLeavesOfType(VIEW_TYPE_PDF_VIEWER)[0];
+
+		const existing = workspace.getLeavesOfType(VIEW_TYPE_OUTLINE);
+		if (existing.length > 0) {
+			workspace.revealLeaf(existing[0]);
+			return;
+		}
+
+		const leaf = workspace.getRightLeaf(false);
+		if (!leaf) {
+			new Notice('PDF Duh: failed to open the outline panel');
+			return;
+		}
+		await leaf.setViewState({ type: VIEW_TYPE_OUTLINE, active: true });
+		workspace.revealLeaf(leaf);
+	}
+
+	/**
+	 * Serve the core Outline view type with our own view, so the Outline
+	 * panel shows PDF bookmark trees when a PDF is active. Mirrors
+	 * takeOverPdfExtension: swap the registered view class and restore it
+	 * on unload.
+	 */
+	private takeOverOutlineView(): void {
+		try {
+			const registry = (this.app as unknown as {
+				viewRegistry: {
+					viewByType: Record<string, unknown>;
+				};
+			}).viewRegistry;
+			const defaultOutlineCreator = registry.viewByType[VIEW_TYPE_OUTLINE];
+			if (defaultOutlineCreator === undefined) {
+				throw new Error(
+					'no outline view registered (is the Outline core plugin enabled?)'
+				);
+			}
+			registry.viewByType[VIEW_TYPE_OUTLINE] = (
+				leaf: WorkspaceLeaf
+			) => new PdfDuhOutlineView(leaf, this);
+			this.register(() => {
+				registry.viewByType[VIEW_TYPE_OUTLINE] = defaultOutlineCreator;
+			});
+			void this.recreateOutlineLeaves();
+		} catch (error) {
+			console.error('PDF Duh: failed to take over the Outline panel', error);
+			new Notice('PDF Duh: could not take over the Outline panel');
+		}
+	}
+
+	/** Re-create open Outline tabs so they pick up our view class. */
+	private async recreateOutlineLeaves(): Promise<void> {
+		const { workspace } = this.app;
+		for (const leaf of workspace.getLeavesOfType(VIEW_TYPE_OUTLINE)) {
+			if (leaf.view instanceof PdfDuhOutlineView) {
+				continue;
+			}
+			await leaf.setViewState({ type: 'empty' });
+			await leaf.setViewState({ type: VIEW_TYPE_OUTLINE });
+		}
+	}
+
+	/**
+	 * Jump a PDF viewer tab to the given page index. Prefers the provided
+	 * viewer, otherwise the active one, otherwise the first open viewer tab.
+	 */
+	async jumpToPdfPage(pageIndex: number, viewer?: PdfViewerView): Promise<void> {
+		const { workspace } = this.app;
+		const leaf =
+			viewer?.leaf ??
+			(workspace.getActiveViewOfType(PdfViewerView)?.leaf ??
+				workspace.getLeavesOfType(VIEW_TYPE_PDF_VIEWER)[0]);
 		if (!leaf) {
 			return;
 		}
@@ -156,7 +235,7 @@ export default class PdfDuhPlugin extends Plugin {
 	}
 
 	/** Ask any open PDF structure panels to re-read the active document. */
-	refreshPdfMetadataView(): void {
+	refreshPdfStructureViews(): void {
 		const { workspace } = this.app;
 		for (const leaf of workspace.getLeavesOfType(VIEW_TYPE_PDF_METADATA)) {
 			const view = leaf.view;
@@ -164,15 +243,27 @@ export default class PdfDuhPlugin extends Plugin {
 				view.refresh();
 			}
 		}
+		for (const leaf of workspace.getLeavesOfType(VIEW_TYPE_OUTLINE)) {
+			const view = leaf.view;
+			if (view instanceof PdfDuhOutlineView) {
+				view.refresh();
+			}
+		}
 	}
 
 	/** Move the current-bookmark highlight in any open PDF structure panels. */
-	updatePdfMetadataHighlight(pageIndex: number): void {
+	updatePdfPageHighlight(pageIndex: number): void {
 		const { workspace } = this.app;
 		for (const leaf of workspace.getLeavesOfType(VIEW_TYPE_PDF_METADATA)) {
 			const view = leaf.view;
 			if (view instanceof PdfMetadataView) {
 				view.updateHighlight(pageIndex);
+			}
+		}
+		for (const leaf of workspace.getLeavesOfType(VIEW_TYPE_OUTLINE)) {
+			const view = leaf.view;
+			if (view instanceof PdfDuhOutlineView) {
+				view.updatePdfHighlight(pageIndex);
 			}
 		}
 	}
