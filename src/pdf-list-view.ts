@@ -1,7 +1,7 @@
 import { App, ItemView, Notice, TFile, WorkspaceLeaf } from 'obsidian';
 import rectRenderWasm from './wasm/main.c';
 
-export const VIEW_TYPE_PDF_LIST = 'pdf-duh-list';
+export const VIEW_TYPE_PDF_LIST = 'mupdf-list';
 
 /** A tab that lists every PDF in the vault. */
 export class PdfListView extends ItemView {
@@ -24,12 +24,12 @@ export class PdfListView extends ItemView {
 	async onOpen(): Promise<void> {
 		const { contentEl } = this;
 		contentEl.empty();
-		contentEl.addClass('pdf-duh-list-view');
+		contentEl.addClass('mupdf-list-view');
 
 		const canvasEl = contentEl.createEl('canvas', {
 			attr: { width: '240', height: '120' },
 		});
-		canvasEl.addClass('pdf-duh-canvas');
+		canvasEl.addClass('mupdf-canvas');
 		try {
 			await this.renderRedRect(canvasEl);
 		} catch (error) {
@@ -42,19 +42,19 @@ export class PdfListView extends ItemView {
 		if (pdfs.length === 0) {
 			contentEl.createDiv({
 				text: 'No PDFs found in this vault.',
-				cls: 'pdf-duh-list-empty',
+				cls: 'mupdf-list-empty',
 			});
 			return;
 		}
 
-		const listEl = contentEl.createDiv('pdf-duh-list');
+		const listEl = contentEl.createDiv('mupdf-list');
 		for (const file of pdfs) {
-			const rowEl = listEl.createDiv('pdf-duh-list-item');
-			rowEl.createDiv({ text: file.name, cls: 'pdf-duh-list-item-name' });
+			const rowEl = listEl.createDiv('mupdf-list-item');
+			rowEl.createDiv({ text: file.name, cls: 'mupdf-list-item-name' });
 			const folder = file.parent?.path ?? '/';
 			rowEl.createDiv({
 				text: folder === '/' ? '/' : folder,
-				cls: 'pdf-duh-list-item-path',
+				cls: 'mupdf-list-item-path',
 			});
 			rowEl.addEventListener('click', () => {
 				void this.app.workspace.getLeaf('tab').openFile(file);

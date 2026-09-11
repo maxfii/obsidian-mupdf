@@ -8,7 +8,7 @@ import {
 } from './libmupdf';
 import type { OutlineItem } from './libmupdf';
 
-export const VIEW_TYPE_PDF_VIEWER = 'pdf-duh-viewer';
+export const VIEW_TYPE_PDF_VIEWER = 'mupdf-viewer';
 
 /**
  * The active PDF viewer, or the first open viewer with a document when no
@@ -41,7 +41,8 @@ export class PdfViewerView extends FileView {
 
 	private canvasEl!: HTMLCanvasElement;
 	private scrollEl!: HTMLElement;
-	private pageLabelEl!: HTMLElement;
+	private pageInputEl!: HTMLInputElement;
+	private pageCountLabelEl!: HTMLElement;
 	private prevButtonEl!: HTMLButtonElement;
 	private nextButtonEl!: HTMLButtonElement;
 
@@ -69,23 +70,14 @@ export class PdfViewerView extends FileView {
 	async onOpen(): Promise<void> {
 		const { contentEl } = this;
 		contentEl.empty();
-		contentEl.addClass('pdf-duh-viewer');
+		contentEl.addClass('mupdf-viewer');
 
-		const toolbarEl = contentEl.createDiv('pdf-duh-viewer-toolbar');
+		const toolbarEl = contentEl.createDiv('mupdf-viewer-toolbar');
 
 		const listButton = toolbarEl.createEl('button', { cls: 'clickable-icon' });
 		setIcon(listButton, 'list');
 		listButton.addEventListener('click', () => {
 			void this.plugin.activatePdfListView();
-		});
-
-		const structureButton = toolbarEl.createEl('button', {
-			cls: 'clickable-icon',
-		});
-		setIcon(structureButton, 'list-tree');
-		structureButton.setAttribute('aria-label', 'Show PDF structure');
-		structureButton.addEventListener('click', () => {
-			void this.plugin.activatePdfMetadataView();
 		});
 
 		this.prevButtonEl = toolbarEl.createEl('button', { cls: 'clickable-icon' });
@@ -94,8 +86,35 @@ export class PdfViewerView extends FileView {
 			void this.goToPage(this.pageIndex - 1);
 		});
 
-		this.pageLabelEl = toolbarEl.createSpan('pdf-duh-viewer-page-label');
-		this.pageLabelEl.setText('- / -');
+		this.pageInputEl = toolbarEl.createEl('input', {
+			cls: 'mupdf-viewer-page-input',
+			type: 'text',
+		});
+		this.pageInputEl.inputMode = 'numeric';
+		this.pageInputEl.disabled = true;
+		this.pageInputEl.addEventListener('keydown', (event: KeyboardEvent) => {
+			if (event.key === 'Enter') {
+				event.preventDefault();
+				const value = Number.parseInt(this.pageInputEl.value, 10);
+				if (
+					Number.isInteger(value) &&
+					value >= 1 &&
+					value <= this.pageCount &&
+					value !== this.pageIndex + 1
+				) {
+					void this.goToPage(value - 1);
+					this.pageInputEl.blur();
+				} else {
+					this.pageInputEl.value = String(this.pageIndex + 1);
+				}
+			}
+		});
+		this.pageInputEl.addEventListener('blur', () => {
+			this.pageInputEl.value = String(this.pageIndex + 1);
+		});
+
+		this.pageCountLabelEl = toolbarEl.createSpan('mupdf-viewer-page-label');
+		this.pageCountLabelEl.setText('/ -');
 
 		this.nextButtonEl = toolbarEl.createEl('button', { cls: 'clickable-icon' });
 		setIcon(this.nextButtonEl, 'chevron-right');
@@ -103,11 +122,11 @@ export class PdfViewerView extends FileView {
 			void this.goToPage(this.pageIndex + 1);
 		});
 
-		toolbarEl.createDiv('pdf-duh-viewer-toolbar-spacer');
+		toolbarEl.createDiv('mupdf-viewer-toolbar-spacer');
 
-		this.scrollEl = contentEl.createDiv('pdf-duh-viewer-scroll');
+		this.scrollEl = contentEl.createDiv('mupdf-viewer-scroll');
 		this.canvasEl = this.scrollEl.createEl('canvas');
-		this.canvasEl.addClass('pdf-duh-viewer-canvas');
+		this.canvasEl.addClass('mupdf-viewer-canvas');
 
 		const observer = new ResizeObserver(() => {
 			this.requestResizeRender();
@@ -165,7 +184,9 @@ export class PdfViewerView extends FileView {
 		this.doc = null;
 		this.pageCount = 0;
 		this.pageIndex = 0;
-		this.pageLabelEl.setText('Loading…');
+		this.pageInputEl.disabled = true;
+		this.pageInputEl.value = '-';
+		this.pageCountLabelEl.setText('/ -');
 		try {
 			this.engine = await getMupdfEngine(
 				(path) => this.app.vault.adapter.readBinary(path),
@@ -263,6 +284,7 @@ export class PdfViewerView extends FileView {
 			return;
 		}
 		this.rendering = true;
+		this.pageInputEl.disabled = true;
 		this.pendingFitRender = false;
 		try {
 			const page = this.doc.renderPage(this.pageIndex, bitmapWidth);
@@ -275,7 +297,9 @@ export class PdfViewerView extends FileView {
 				throw new Error('Canvas 2D context unavailable');
 			}
 			ctx.putImageData(new ImageData(page.pixels, page.width, page.height), 0, 0);
-			this.pageLabelEl.setText(`${this.pageIndex + 1} / ${this.pageCount}`);
+			this.pageInputEl.value = String(this.pageIndex + 1);
+			this.pageInputEl.disabled = false;
+			this.pageCountLabelEl.setText(`/ ${this.pageCount}`);
 			this.prevButtonEl.disabled = this.pageIndex <= 0;
 			this.nextButtonEl.disabled = this.pageIndex >= this.pageCount - 1;
 		} finally {

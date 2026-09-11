@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-pdf-duh",
+	"name": "obsidian-mupdf",
 	"version": "1.0.0",
-	"description": "PDF helpers for Obsidian.",
+	"description": "(Mu)PDF rendering engine for Obsidian.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",

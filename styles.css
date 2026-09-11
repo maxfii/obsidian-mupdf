@@ -1,41 +1,41 @@
 /* Styles declared in styles.css are loaded automatically with the plugin.
    Use the manifest id as a prefix to avoid collisions with other plugins. */
 
-.pdf-duh-ribbon-class {
+.mupdf-ribbon-class {
 	color: var(--text-accent);
 }
 
-.pdf-duh-list-view {
+.mupdf-list-view {
 	padding: 8px;
 }
 
-.pdf-duh-list-empty {
+.mupdf-list-empty {
 	color: var(--text-muted);
 	padding: 16px;
 }
 
-.pdf-duh-list {
+.mupdf-list {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 }
 
-.pdf-duh-list-item {
+.mupdf-list-item {
 	padding: 6px 10px;
 	border-radius: var(--radius-s);
 	cursor: pointer;
 }
 
-.pdf-duh-list-item:hover {
+.mupdf-list-item:hover {
 	background-color: var(--background-modifier-hover);
 }
 
-.pdf-duh-list-item-name {
+.mupdf-list-item-name {
 	color: var(--text-normal);
 	font-weight: var(--font-medium);
 }
 
-.pdf-duh-list-item-path {
+.mupdf-list-item-path {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 	white-space: nowrap;
@@ -43,20 +43,20 @@
 	text-overflow: ellipsis;
 }
 
-.pdf-duh-canvas {
+.mupdf-canvas {
 	background-color: white;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-s);
 	margin-bottom: 8px;
 }
 
-.pdf-duh-viewer {
+.mupdf-viewer {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 }
 
-.pdf-duh-viewer-toolbar {
+.mupdf-viewer-toolbar {
 	display: flex;
 	align-items: center;
 	gap: 2px;
@@ -65,11 +65,11 @@
 	flex-shrink: 0;
 }
 
-.pdf-duh-viewer-toolbar-spacer {
+.mupdf-viewer-toolbar-spacer {
 	flex: 1;
 }
 
-.pdf-duh-viewer-page-label {
+.mupdf-viewer-page-label {
 	min-width: 5em;
 	text-align: center;
 	color: var(--text-muted);
@@ -77,7 +77,19 @@
 	user-select: none;
 }
 
-.pdf-duh-viewer-scroll {
+.mupdf-viewer-page-input {
+	width: 3em;
+	text-align: center;
+	font-size: var(--font-ui-smaller);
+	padding: 2px 4px;
+}
+
+.mupdf-viewer-page-input:disabled {
+	color: var(--text-muted);
+	opacity: 0.6;
+}
+
+.mupdf-viewer-scroll {
 	flex: 1;
 	overflow: auto;
 	padding: 16px;
@@ -88,29 +100,29 @@
 	align-items: safe center;
 }
 
-.pdf-duh-viewer-canvas {
+.mupdf-viewer-canvas {
 	display: block;
 	flex-shrink: 0;
 	background-color: white;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-.pdf-duh-metadata-view, .pdf-duh-outline-view {
+.mupdf-outline-view {
 	padding: 8px 12px;
 }
 
-.pdf-duh-tree-empty {
+.mupdf-tree-empty {
 	color: var(--text-muted);
 	padding: 6px 4px;
 }
 
-.pdf-duh-tree {
+.mupdf-tree {
 	display: flex;
 	flex-direction: column;
 	gap: 1px;
 }
 
-.pdf-duh-tree-row {
+.mupdf-tree-row {
 	display: flex;
 	align-items: center;
 	gap: 4px;
@@ -120,19 +132,19 @@
 	min-width: 0;
 }
 
-.pdf-duh-tree-row:hover {
+.mupdf-tree-row:hover {
 	background-color: var(--background-modifier-hover);
 }
 
-.pdf-duh-tree-row.is-current {
+.mupdf-tree-row.is-current {
 	background-color: var(--background-modifier-active-hover);
 }
 
-.pdf-duh-tree-row.is-current .pdf-duh-tree-title {
+.mupdf-tree-row.is-current .mupdf-tree-title {
 	color: var(--text-accent);
 }
 
-.pdf-duh-tree-caret {
+.mupdf-tree-caret {
 	width: 14px;
 	flex-shrink: 0;
 	display: inline-flex;
@@ -140,24 +152,24 @@
 	color: var(--text-muted);
 }
 
-.pdf-duh-tree-caret svg {
+.mupdf-tree-caret svg {
 	width: 12px;
 	height: 12px;
 }
 
-.pdf-duh-tree-collapsible.is-open
-	> .pdf-duh-tree-row
-	.pdf-duh-tree-caret
+.mupdf-tree-collapsible.is-open
+	> .mupdf-tree-row
+	.mupdf-tree-caret
 	svg {
 	transform: rotate(90deg);
 }
 
-.pdf-duh-tree-item:not(.is-open)
-	+ .pdf-duh-tree-children {
+.mupdf-tree-item:not(.is-open)
+	+ .mupdf-tree-children {
 	display: none;
 }
 
-.pdf-duh-tree-title {
+.mupdf-tree-title {
 	color: var(--text-normal);
 	white-space: nowrap;
 	overflow: hidden;
@@ -165,19 +177,19 @@
 	flex: 1;
 }
 
-.pdf-duh-tree-page {
+.mupdf-tree-page {
 	color: var(--text-faint);
 	font-size: var(--font-ui-smaller);
 	flex-shrink: 0;
 }
 
-.pdf-duh-tree-children {
+.mupdf-tree-children {
 	display: flex;
 	flex-direction: column;
 	gap: 1px;
 }
 
-.pdf-duh-tree-controls {
+.mupdf-tree-controls {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
@@ -185,27 +197,27 @@
 	flex-shrink: 0;
 }
 
-.pdf-duh-tree-actions {
+.mupdf-tree-actions {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 4px;
 	min-height: 0;
 }
 
-.pdf-duh-tree-actions:empty {
+.mupdf-tree-actions:empty {
 	display: none;
 }
 
-.pdf-duh-tree-search {
+.mupdf-tree-search {
 	width: 100%;
 	padding-right: 26px;
 }
 
-.pdf-duh-tree-search-wrapper {
+.mupdf-tree-search-wrapper {
 	position: relative;
 }
 
-.pdf-duh-tree-search-clear {
+.mupdf-tree-search-clear {
 	position: absolute;
 	top: 50%;
 	right: 4px;
@@ -219,34 +231,34 @@
 	cursor: pointer;
 }
 
-.pdf-duh-tree-search-clear.is-visible {
+.mupdf-tree-search-clear.is-visible {
 	display: flex;
 }
 
-.pdf-duh-tree-search-clear:hover {
+.mupdf-tree-search-clear:hover {
 	color: var(--text-normal);
 	background-color: var(--background-modifier-hover);
 }
 
-.pdf-duh-tree-no-matches {
+.mupdf-tree-no-matches {
 	color: var(--text-muted);
 	padding: 6px 4px;
 }
 
-.pdf-duh-tree.is-filtering .pdf-duh-tree-item {
+.mupdf-tree.is-filtering .mupdf-tree-item {
 	display: none;
 }
 
-.pdf-duh-tree.is-filtering
-	.pdf-duh-tree-item.is-filter-match {
+.mupdf-tree.is-filtering
+	.mupdf-tree-item.is-filter-match {
 	display: block;
 }
 
-.pdf-duh-tree.is-filtering .pdf-duh-tree-children {
+.mupdf-tree.is-filtering .mupdf-tree-children {
 	display: none;
 }
 
-.pdf-duh-tree.is-filtering
-	.pdf-duh-tree-children.is-filter-visible {
+.mupdf-tree.is-filtering
+	.mupdf-tree-children.is-filter-visible {
 	display: flex;
 }

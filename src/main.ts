@@ -1,8 +1,7 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
 import { PdfListView, VIEW_TYPE_PDF_LIST } from './pdf-list-view';
-import { PdfMetadataView, VIEW_TYPE_PDF_METADATA } from './pdf-metadata-view';
 import { PdfViewerView, VIEW_TYPE_PDF_VIEWER } from './pdf-viewer-view';
-import { PdfDuhOutlineView, VIEW_TYPE_OUTLINE } from './outline-view';
+import { MupdfOutlineView, VIEW_TYPE_OUTLINE } from './outline-view';
 
 /*
  * Remember when writing your own code:
@@ -31,15 +30,13 @@ export default class PdfDuhPlugin extends Plugin {
 
 		this.registerView(VIEW_TYPE_PDF_VIEWER, (leaf) => new PdfViewerView(leaf, this));
 
-		this.registerView(VIEW_TYPE_PDF_METADATA, (leaf) => new PdfMetadataView(leaf, this));
-
 		// Ribbon icon: the button on the left sidebar.
 		// The `this.registerDomEvent`-style cleanup applies here too: Obsidian
 		// removes the ribbon element for you on unload.
 		const ribbonIconEl = this.addRibbonIcon('file-text', 'Open PDF Duh', () => {
 			void this.activatePdfListView();
 		});
-		ribbonIconEl.addClass('pdf-duh-ribbon-class');
+		ribbonIconEl.addClass('mupdf-ribbon-class');
 
 		// Commands appear in the command palette (Ctrl/Cmd+P).
 		// `editor` callbacks only fire when a Markdown editor is focused.
@@ -48,14 +45,6 @@ export default class PdfDuhPlugin extends Plugin {
 			name: 'Open PDF list',
 			callback: () => {
 				void this.activatePdfListView();
-			},
-		});
-
-		this.addCommand({
-			id: 'show-pdf-structure',
-			name: 'Show PDF structure',
-			callback: () => {
-				void this.activatePdfMetadataView();
 			},
 		});
 
@@ -132,25 +121,6 @@ export default class PdfDuhPlugin extends Plugin {
 		workspace.revealLeaf(leaf);
 	}
 
-	/** Reuse an existing PDF structure panel if one is open, otherwise create it. */
-	async activatePdfMetadataView(): Promise<void> {
-		const { workspace } = this.app;
-
-		const existing = workspace.getLeavesOfType(VIEW_TYPE_PDF_METADATA);
-		if (existing.length > 0) {
-			workspace.revealLeaf(existing[0]);
-			return;
-		}
-
-		const leaf = workspace.getRightLeaf(false);
-		if (!leaf) {
-			new Notice('PDF Duh: failed to open the structure panel');
-			return;
-		}
-		await leaf.setViewState({ type: VIEW_TYPE_PDF_METADATA, active: true });
-		workspace.revealLeaf(leaf);
-	}
-
 	/** Reuse an existing Outline tab if one is open, otherwise create it. */
 	async activateOutlineView(): Promise<void> {
 		const { workspace } = this.app;
@@ -185,13 +155,16 @@ export default class PdfDuhPlugin extends Plugin {
 			}).viewRegistry;
 			const defaultOutlineCreator = registry.viewByType[VIEW_TYPE_OUTLINE];
 			if (defaultOutlineCreator === undefined) {
-				throw new Error(
-					'no outline view registered (is the Outline core plugin enabled?)'
+				// Outline core plugin disabled: just serve the view type.
+				this.registerView(
+					VIEW_TYPE_OUTLINE,
+					(leaf: WorkspaceLeaf) => new MupdfOutlineView(leaf, this)
 				);
+				return;
 			}
 			registry.viewByType[VIEW_TYPE_OUTLINE] = (
 				leaf: WorkspaceLeaf
-			) => new PdfDuhOutlineView(leaf, this);
+			) => new MupdfOutlineView(leaf, this);
 			this.register(() => {
 				registry.viewByType[VIEW_TYPE_OUTLINE] = defaultOutlineCreator;
 			});
@@ -206,7 +179,7 @@ export default class PdfDuhPlugin extends Plugin {
 	private async recreateOutlineLeaves(): Promise<void> {
 		const { workspace } = this.app;
 		for (const leaf of workspace.getLeavesOfType(VIEW_TYPE_OUTLINE)) {
-			if (leaf.view instanceof PdfDuhOutlineView) {
+			if (leaf.view instanceof MupdfOutlineView) {
 				continue;
 			}
 			await leaf.setViewState({ type: 'empty' });
@@ -234,35 +207,23 @@ export default class PdfDuhPlugin extends Plugin {
 		}
 	}
 
-	/** Ask any open PDF structure panels to re-read the active document. */
+	/** Ask any open Outline panels to re-read the active document. */
 	refreshPdfStructureViews(): void {
 		const { workspace } = this.app;
-		for (const leaf of workspace.getLeavesOfType(VIEW_TYPE_PDF_METADATA)) {
-			const view = leaf.view;
-			if (view instanceof PdfMetadataView) {
-				view.refresh();
-			}
-		}
 		for (const leaf of workspace.getLeavesOfType(VIEW_TYPE_OUTLINE)) {
 			const view = leaf.view;
-			if (view instanceof PdfDuhOutlineView) {
+			if (view instanceof MupdfOutlineView) {
 				view.refresh();
 			}
 		}
 	}
 
-	/** Move the current-bookmark highlight in any open PDF structure panels. */
+	/** Move the current-bookmark highlight in any open Outline panels. */
 	updatePdfPageHighlight(pageIndex: number): void {
 		const { workspace } = this.app;
-		for (const leaf of workspace.getLeavesOfType(VIEW_TYPE_PDF_METADATA)) {
-			const view = leaf.view;
-			if (view instanceof PdfMetadataView) {
-				view.updateHighlight(pageIndex);
-			}
-		}
 		for (const leaf of workspace.getLeavesOfType(VIEW_TYPE_OUTLINE)) {
 			const view = leaf.view;
-			if (view instanceof PdfDuhOutlineView) {
+			if (view instanceof MupdfOutlineView) {
 				view.updatePdfHighlight(pageIndex);
 			}
 		}

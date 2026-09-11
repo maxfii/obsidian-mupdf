@@ -1,9 +1,9 @@
 {
-	"id": "obsidian-pdf-duh",
-	"name": "PDF Duh",
-	"version": "1.0.0",
+	"id": "obsidian-mupdf",
+	"name": "(Mu)PDF rendering engine",
+	"version": "0.0.1",
 	"minAppVersion": "0.15.0",
-	"description": "PDF helpers for Obsidian.",
-	"author": "Your Name",
+	"description": "Replace Obsidian's standard PDFjs engine for fast MuPDF written in C",
+	"author": "Maksym Fiialkovskyi",
 	"isDesktopOnly": false
 }

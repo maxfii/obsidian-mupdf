@@ -73,8 +73,8 @@ export class OutlineTreeWidget {
 		this.treeEl = null;
 		this.noMatchesEl = null;
 
-		const controlsEl = containerEl.createDiv('pdf-duh-tree-controls');
-		const actionsEl = controlsEl.createDiv('pdf-duh-tree-actions');
+		const controlsEl = containerEl.createDiv('mupdf-tree-controls');
+		const actionsEl = controlsEl.createDiv('mupdf-tree-actions');
 
 		const collapseButton = actionsEl.createEl('button', {
 			cls: 'clickable-icon',
@@ -94,14 +94,14 @@ export class OutlineTreeWidget {
 			this.expandAll();
 		});
 
-		const searchWrapEl = controlsEl.createDiv('pdf-duh-tree-search-wrapper');
+		const searchWrapEl = controlsEl.createDiv('mupdf-tree-search-wrapper');
 		const searchEl = searchWrapEl.createEl('input', {
 			type: 'search',
 			placeholder: 'Filter…',
-			cls: 'pdf-duh-tree-search',
+			cls: 'mupdf-tree-search',
 		});
 		const clearSearchEl = searchWrapEl.createDiv(
-			'pdf-duh-tree-search-clear clickable-icon'
+			'mupdf-tree-search-clear clickable-icon'
 		);
 		setIcon(clearSearchEl, 'x');
 		const updateClearButton = (): void => {
@@ -120,11 +120,11 @@ export class OutlineTreeWidget {
 			searchEl.focus();
 		});
 
-		this.noMatchesEl = containerEl.createDiv('pdf-duh-tree-no-matches');
+		this.noMatchesEl = containerEl.createDiv('mupdf-tree-no-matches');
 		this.noMatchesEl.setText('No matches');
 		this.noMatchesEl.hide();
 
-		const treeEl = containerEl.createDiv('pdf-duh-tree');
+		const treeEl = containerEl.createDiv('mupdf-tree');
 		this.treeEl = treeEl;
 		for (const spec of specs) {
 			this.renderItem(treeEl, spec, 0);
@@ -214,7 +214,7 @@ export class OutlineTreeWidget {
 			let current: HTMLElement | null = entry.item;
 			while (current) {
 				const container = current.parentElement;
-				if (!container || !container.hasClass('pdf-duh-tree-children')) {
+				if (!container || !container.hasClass('mupdf-tree-children')) {
 					break;
 				}
 				if (container.hasClass('is-filter-visible')) {
@@ -248,10 +248,10 @@ export class OutlineTreeWidget {
 		}
 		const keepOpen = new Set<HTMLElement>();
 		for (const row of this.highlightedRows) {
-			let item = row.closest<HTMLElement>('.pdf-duh-tree-item');
+			let item = row.closest<HTMLElement>('.mupdf-tree-item');
 			while (item) {
 				keepOpen.add(item);
-				if (item.hasClass('pdf-duh-tree-collapsible')) {
+				if (item.hasClass('mupdf-tree-collapsible')) {
 					item.addClass('is-open');
 				}
 				item = this.parentOutlineItem(item);
@@ -293,17 +293,17 @@ export class OutlineTreeWidget {
 	 */
 	private parentOutlineItem(item: HTMLElement): HTMLElement | null {
 		const container = item.parentElement;
-		if (!container || !container.hasClass('pdf-duh-tree-children')) {
+		if (!container || !container.hasClass('mupdf-tree-children')) {
 			return null;
 		}
 		const prev = container.previousElementSibling;
-		return prev instanceof HTMLElement && prev.hasClass('pdf-duh-tree-item')
+		return prev instanceof HTMLElement && prev.hasClass('mupdf-tree-item')
 			? prev
 			: null;
 	}
 
 	private expandAncestors(row: HTMLElement): void {
-		let item = row.closest<HTMLElement>('.pdf-duh-tree-item');
+		let item = row.closest<HTMLElement>('.mupdf-tree-item');
 		while (item) {
 			const parent = this.parentOutlineItem(item);
 			if (parent && !parent.hasClass('is-open')) {
@@ -318,34 +318,34 @@ export class OutlineTreeWidget {
 		spec: OutlineTreeSpec,
 		depth: number
 	): void {
-		const itemEl = containerEl.createDiv('pdf-duh-tree-item');
+		const itemEl = containerEl.createDiv('mupdf-tree-item');
 		itemEl.style.paddingLeft = `${depth * 16}px`;
 
 		const hasChildren = spec.children.length > 0;
 		let childrenEl: HTMLElement | null = null;
 		if (hasChildren) {
-			itemEl.addClass('pdf-duh-tree-collapsible');
+			itemEl.addClass('mupdf-tree-collapsible');
 			if (spec.open || depth === 0) {
 				itemEl.addClass('is-open');
 			}
-			childrenEl = containerEl.createDiv('pdf-duh-tree-children');
+			childrenEl = containerEl.createDiv('mupdf-tree-children');
 		}
 
-		const rowEl = itemEl.createDiv('pdf-duh-tree-row');
-		const caretEl = rowEl.createSpan('pdf-duh-tree-caret');
+		const rowEl = itemEl.createDiv('mupdf-tree-row');
+		const caretEl = rowEl.createSpan('mupdf-tree-caret');
 		if (hasChildren) {
 			setIcon(caretEl, 'chevron-right');
 		}
 
 		rowEl.createSpan({
 			text: spec.title,
-			cls: 'pdf-duh-tree-title',
+			cls: 'mupdf-tree-title',
 		});
 
 		if (spec.badge !== undefined) {
 			rowEl.createSpan({
 				text: spec.badge,
-				cls: 'pdf-duh-tree-badge',
+				cls: 'mupdf-tree-badge',
 			});
 		}
 
@@ -363,7 +363,7 @@ export class OutlineTreeWidget {
 		rowEl.addEventListener('click', (event) => {
 			if (event.target !== null) {
 				const target = event.target as HTMLElement;
-				if (target.closest('.pdf-duh-tree-caret')) {
+				if (target.closest('.mupdf-tree-caret')) {
 					if (hasChildren) {
 						toggleOutlineItem(itemEl);
 					}

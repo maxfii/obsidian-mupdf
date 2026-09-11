@@ -22,7 +22,7 @@ export const VIEW_TYPE_OUTLINE = 'outline';
  * the current page) and a heading outline when a markdown note is active, so
  * the core plugin's normal behaviour keeps working.
  */
-export class PdfDuhOutlineView extends ItemView {
+export class MupdfOutlineView extends ItemView {
 	private mode: 'pdf' | 'markdown' | 'none' = 'none';
 	private currentDoc: MupdfDocument | null = null;
 	/** Sticky sources: kept when the Outline itself is focused. */
@@ -50,7 +50,7 @@ export class PdfDuhOutlineView extends ItemView {
 
 	async onOpen(): Promise<void> {
 		this.contentEl.empty();
-		this.contentEl.addClass('pdf-duh-outline-view');
+		this.contentEl.addClass('mupdf-outline-view');
 		this.registerEvent(
 			this.app.workspace.on('active-leaf-change', () => {
 				this.refresh();
@@ -198,7 +198,7 @@ export class PdfDuhOutlineView extends ItemView {
 		this.contentEl.empty();
 		this.contentEl.createDiv({
 			text,
-			cls: 'pdf-duh-tree-empty',
+			cls: 'mupdf-tree-empty',
 		});
 	}
 
