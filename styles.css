@@ -30,10 +30,10 @@
 }
 
 .mupdf-viewer-page-label {
-	min-width: 5em;
 	text-align: center;
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
+	line-height: var(--font-ui-smaller);
 	user-select: none;
 }
 

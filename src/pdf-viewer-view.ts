@@ -140,7 +140,7 @@ export class PdfViewerView extends FileView {
 		});
 
 		this.pageCountLabelEl = toolbarEl.createSpan('mupdf-viewer-page-label');
-		this.pageCountLabelEl.setText('/ -');
+		this.pageCountLabelEl.setText('of -');
 
 		this.nextButtonEl = toolbarEl.createEl('button', { cls: 'clickable-icon' });
 		setIcon(this.nextButtonEl, 'chevron-right');
@@ -452,7 +452,7 @@ export class PdfViewerView extends FileView {
 			);
 			this.pageInputEl.value = String(this.pageIndex + 1);
 			this.pageInputEl.disabled = false;
-			this.pageCountLabelEl.setText(`/ ${this.pageCount}`);
+			this.pageCountLabelEl.setText(`of ${this.pageCount}`);
 			this.prevButtonEl.disabled = this.pageIndex <= 0;
 			this.nextButtonEl.disabled =
 				this.pageIndex + 1 >= this.pageCount;
