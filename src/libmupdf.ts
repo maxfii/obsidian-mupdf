@@ -148,6 +148,7 @@ export class MupdfEngine {
 	private rectPtr: Ptr;
 	private matrixPtr: Ptr;
 	private magicPtr: Ptr;
+	private pixelBuffer: Uint8ClampedArray | null = null;
 	lib: LibMupdf;
 	rgbPtr: Ptr;
 
@@ -240,6 +241,19 @@ export class MupdfEngine {
 		];
 	}
 
+	private acquirePixelBuffer(byteLength: number): Uint8ClampedArray {
+		let buffer = this.pixelBuffer;
+		if (!buffer || buffer.byteLength < byteLength) {
+			const capacity = Math.max(
+				byteLength,
+				buffer ? buffer.byteLength * 2 : byteLength
+			);
+			buffer = new Uint8ClampedArray(capacity);
+			this.pixelBuffer = buffer;
+		}
+		return buffer.subarray(0, byteLength);
+	}
+
 	readPixmap(pixmapPtr: Ptr): RenderedPage {
 		const lib = this.lib;
 		const width = lib._wasm_pixmap_get_w(pixmapPtr);
@@ -254,7 +268,7 @@ export class MupdfEngine {
 			stride * height
 		);
 		if (components === 4) {
-			const out = new Uint8ClampedArray(rowBytes * height);
+			const out = this.acquirePixelBuffer(rowBytes * height);
 			if (stride === rowBytes) {
 				out.set(src);
 			} else {
@@ -268,7 +282,7 @@ export class MupdfEngine {
 			return { width, height, pixels: out };
 		}
 		if (components === 3) {
-			const out = new Uint8ClampedArray(width * 4 * height);
+			const out = this.acquirePixelBuffer(width * 4 * height);
 			for (let y = 0; y < height; y++) {
 				let srcBase = y * stride;
 				let dstBase = y * width * 4;
