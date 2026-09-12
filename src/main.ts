@@ -1,9 +1,27 @@
-import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
+import {
+	Notice,
+	Plugin,
+	PluginSettingTab,
+	Setting,
+	WorkspaceLeaf,
+} from 'obsidian';
 import { PdfViewerView, VIEW_TYPE_PDF_VIEWER } from './pdf-viewer-view';
 import { MupdfOutlineView, VIEW_TYPE_OUTLINE } from './outline-view';
 
+interface PdfDuhSettings {
+	renderScale: number;
+}
+
+const DEFAULT_SETTINGS: PdfDuhSettings = {
+	renderScale: 1,
+};
+
 export default class PdfDuhPlugin extends Plugin {
+	settings: PdfDuhSettings = DEFAULT_SETTINGS;
+
 	async onload() {
+		await this.loadSettings();
+		this.addSettingTab(new PdfDuhSettingTab(this.app, this));
 		this.registerView(VIEW_TYPE_PDF_VIEWER, (leaf) => new PdfViewerView(leaf, this));
 
 		this.takeOverPdfExtension();
@@ -11,6 +29,29 @@ export default class PdfDuhPlugin extends Plugin {
 	}
 
 	onunload() {}
+
+	async loadSettings(): Promise<void> {
+		this.settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			await this.loadData()
+		);
+	}
+
+	async saveSettings(): Promise<void> {
+		await this.saveData(this.settings);
+	}
+
+	/** Re-render every open PDF viewer tab at the current settings. */
+	refreshPdfViewers(): void {
+		const { workspace } = this.app;
+		for (const leaf of workspace.getLeavesOfType(VIEW_TYPE_PDF_VIEWER)) {
+			const view = leaf.view;
+			if (view instanceof PdfViewerView) {
+				view.requestRender();
+			}
+		}
+	}
 
 	/**
 	 * Serve the core Outline view type with our own view, so the Outline
@@ -155,5 +196,42 @@ export default class PdfDuhPlugin extends Plugin {
 				'PDF Duh: could not take over PDF viewing, PDFs will open with the default viewer'
 			);
 		}
+	}
+}
+
+class PdfDuhSettingTab extends PluginSettingTab {
+	constructor(app: PdfDuhPlugin['app'], private plugin: PdfDuhPlugin) {
+		super(app, plugin);
+	}
+
+	display(): void {
+		const { containerEl } = this;
+		containerEl.empty();
+
+		new Setting(containerEl)
+			.setName('Render sharpness')
+			.setDesc(
+				'Fraction of the pane width to rasterize pages at (0.1–4). ' +
+					'Lower values render faster but look blurrier. Applied to open PDF tabs immediately.'
+			)
+			.addText((text) => {
+				text.inputEl.type = 'number';
+				text.inputEl.step = '0.05';
+				text.inputEl.min = '0.1';
+				text.inputEl.max = '4';
+				text.setValue(String(this.plugin.settings.renderScale));
+				text.onChange(async (value) => {
+					const parsed = Number.parseFloat(value);
+					if (!Number.isFinite(parsed)) {
+						return;
+					}
+					this.plugin.settings.renderScale = Math.min(
+						4,
+						Math.max(0.1, parsed)
+					);
+					await this.plugin.saveSettings();
+					this.plugin.refreshPdfViewers();
+				});
+			});
 	}
 }

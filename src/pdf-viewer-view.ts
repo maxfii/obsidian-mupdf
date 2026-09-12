@@ -272,8 +272,8 @@ export class PdfViewerView extends FileView {
 			this.renderQueued = true;
 			return;
 		}
-		const bitmapWidth = this.getAvailableWidth();
-		if (bitmapWidth <= 0) {
+		const displayWidth = this.getAvailableWidth();
+		if (displayWidth <= 0) {
 			this.pendingFitRender = true;
 			return;
 		}
@@ -281,11 +281,17 @@ export class PdfViewerView extends FileView {
 		this.pageInputEl.disabled = true;
 		this.pendingFitRender = false;
 		try {
+			const bitmapWidth = Math.max(
+				1,
+				Math.round(displayWidth * this.plugin.settings.renderScale)
+			);
 			const page = this.doc.renderPage(this.pageIndex, bitmapWidth);
 			this.canvasEl.width = page.width;
 			this.canvasEl.height = page.height;
-			this.canvasEl.style.width = `${page.width}px`;
-			this.canvasEl.style.height = `${page.height}px`;
+			this.canvasEl.style.width = `${displayWidth}px`;
+			this.canvasEl.style.height = `${Math.round(
+				(displayWidth * page.height) / page.width
+			)}px`;
 			const ctx = this.canvasEl.getContext('2d');
 			if (!ctx) {
 				throw new Error('Canvas 2D context unavailable');
@@ -317,7 +323,7 @@ export class PdfViewerView extends FileView {
 		return Math.round(available);
 	}
 
-	private requestRender(): void {
+	requestRender(): void {
 		void this.renderCurrent();
 	}
 }
