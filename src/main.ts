@@ -5,6 +5,7 @@ import {
 	Setting,
 	WorkspaceLeaf,
 } from 'obsidian';
+import { getMupdfEngine } from './libmupdf';
 import { PdfViewerView, VIEW_TYPE_PDF_VIEWER } from './pdf-viewer-view';
 import { MupdfOutlineView, VIEW_TYPE_OUTLINE } from './outline-view';
 
@@ -26,6 +27,13 @@ export default class PdfDuhPlugin extends Plugin {
 
 		this.takeOverPdfExtension();
 		this.takeOverOutlineView();
+
+		void getMupdfEngine(
+			(path) => this.app.vault.adapter.readBinary(path),
+			this.mupdfWasmPath()
+		).catch((error) => {
+			console.error('PDF Duh: failed to preload MuPDF engine', error);
+		});
 	}
 
 	onunload() {}

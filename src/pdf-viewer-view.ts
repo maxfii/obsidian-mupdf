@@ -182,12 +182,15 @@ export class PdfViewerView extends FileView {
 		this.pageInputEl.value = '-';
 		this.pageCountLabelEl.setText('/ -');
 		try {
-			this.engine = await getMupdfEngine(
-				(path) => this.app.vault.adapter.readBinary(path),
-				this.plugin.mupdfWasmPath()
-			);
-			const data = await this.app.vault.readBinary(file);
-			this.doc = this.engine.openDocument(new Uint8Array(data));
+			const [engine, data] = await Promise.all([
+				getMupdfEngine(
+					(path) => this.app.vault.adapter.readBinary(path),
+					this.plugin.mupdfWasmPath()
+				),
+				this.app.vault.readBinary(file),
+			]);
+			this.engine = engine;
+			this.doc = engine.openDocument(new Uint8Array(data));
 			this.pageCount = this.doc.countPages();
 			await this.renderCurrent();
 			this.plugin.refreshPdfStructureViews();
