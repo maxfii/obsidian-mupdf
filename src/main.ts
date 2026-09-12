@@ -241,22 +241,45 @@ export default class PdfDuhPlugin extends Plugin {
 		try {
 			const registry = (this.app as unknown as {
 				viewRegistry: {
+					viewByType: Record<string, unknown>;
 					typeByExtension: Record<string, unknown>;
+					registerExtensions: (extensions: string[], type: string) => void;
 					unregisterExtensions?: (extensions: string[]) => void;
 				};
 			}).viewRegistry;
-			const defaultPdfCreator = registry.typeByExtension['pdf'];
+
+			// The creator for the default "pdf" view. Normally found via
+			// typeByExtension, but if a previous disable/unload cycle left the
+			// extension mapping dangling (our cleanup deletes it after the
+			// restore callback re-added it, LIFO order), it can still be
+			// recovered from viewByType, where core registers the view type
+			// "pdf" permanently.
+			let defaultPdfCreator = registry.typeByExtension['pdf'];
+			if (defaultPdfCreator === undefined) {
+				defaultPdfCreator = registry.viewByType['pdf'];
+			}
 			if (defaultPdfCreator === undefined) {
 				throw new Error('no default PDF handler registered');
 			}
+
+			// Unregister first, then claim the extension. registerExtensions
+			// throws if the extension is already taken, so we must not rely on
+			// our own registerExtensions cleanup to have run.
 			if (registry.unregisterExtensions) {
 				registry.unregisterExtensions(['pdf']);
 			} else {
 				delete registry.typeByExtension['pdf'];
 			}
-			this.registerExtensions(['pdf'], VIEW_TYPE_PDF_VIEWER);
+			// Claim via the registry directly instead of
+			// this.registerExtensions: the Component-level wrapper would
+			// register its own cleanup that unregisters the mapping AFTER our
+			// restore callback runs (LIFO), leaving 'pdf' dangling with no
+			// handler on the next enable.
+			registry.registerExtensions(['pdf'], VIEW_TYPE_PDF_VIEWER);
 			this.register(() => {
-				registry.typeByExtension['pdf'] = defaultPdfCreator;
+				registry.unregisterExtensions?.(['pdf']);
+				// Hand the extension back to core's built-in "pdf" view type.
+				registry.registerExtensions(['pdf'], 'pdf');
 			});
 		} catch (error) {
 			console.error('PDF Duh: failed to take over PDF viewing', error);
