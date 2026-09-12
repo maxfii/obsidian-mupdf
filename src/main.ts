@@ -1,4 +1,5 @@
 import {
+	addIcon,
 	Notice,
 	Plugin,
 	PluginSettingTab,
@@ -17,11 +18,28 @@ const DEFAULT_SETTINGS: PdfDuhSettings = {
 	renderScale: 1,
 };
 
+/**
+ * Custom two-page spread icons: outline rects for both pages, with the
+ * left (odd-left mode) or right (even-left mode) page filled at reduced
+ * opacity. Uses currentColor so it follows the button's text color.
+ */
+const TWO_PAGE_ODD_LEFT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="4" width="8" height="16" rx="1" fill="currentColor" fill-opacity="0.35"/>
+  <rect x="13" y="4" width="8" height="16" rx="1"/>
+</svg>`;
+
+const TWO_PAGE_EVEN_LEFT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="4" width="8" height="16" rx="1"/>
+  <rect x="13" y="4" width="8" height="16" rx="1" fill="currentColor" fill-opacity="0.35"/>
+</svg>`;
+
 export default class PdfDuhPlugin extends Plugin {
 	settings: PdfDuhSettings = DEFAULT_SETTINGS;
 
 	async onload() {
 		await this.loadSettings();
+		addIcon('mupdf-two-pages-odd-left', TWO_PAGE_ODD_LEFT_ICON);
+		addIcon('mupdf-two-pages-even-left', TWO_PAGE_EVEN_LEFT_ICON);
 		this.addSettingTab(new PdfDuhSettingTab(this.app, this));
 		this.registerView(VIEW_TYPE_PDF_VIEWER, (leaf) => new PdfViewerView(leaf, this));
 

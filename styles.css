@@ -24,6 +24,11 @@
 	flex: 1;
 }
 
+.mupdf-viewer-layout-button.is-active {
+	color: var(--text-accent);
+	background-color: var(--background-modifier-active-hover);
+}
+
 .mupdf-viewer-page-label {
 	min-width: 5em;
 	text-align: center;

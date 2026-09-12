@@ -7,8 +7,11 @@ import {
 	PdfPasswordError,
 } from './libmupdf';
 import type { OutlineItem } from './libmupdf';
+import type { RenderedPage } from './libmupdf';
 
 export const VIEW_TYPE_PDF_VIEWER = 'mupdf-viewer';
+
+export type PageLayoutMode = 'single' | 'two-odd-left' | 'two-even-left';
 
 /**
  * The active PDF viewer, or the first open viewer with a document when no
@@ -34,6 +37,7 @@ export class PdfViewerView extends FileView {
 	doc: MupdfDocument | null = null;
 	private pageCount = 0;
 	private pageIndex = 0;
+	private layoutMode: PageLayoutMode = 'single';
 	private rendering = false;
 	private renderQueued = false;
 	private pendingFitRender = false;
@@ -45,6 +49,16 @@ export class PdfViewerView extends FileView {
 	private pageCountLabelEl!: HTMLElement;
 	private prevButtonEl!: HTMLButtonElement;
 	private nextButtonEl!: HTMLButtonElement;
+	private layoutButtons!: Record<PageLayoutMode, HTMLButtonElement>;
+
+	private static readonly LAYOUT_BUTTON_ICONS: Record<
+		PageLayoutMode,
+		string
+	> = {
+		single: 'rectangle-vertical',
+		'two-odd-left': 'mupdf-two-pages-odd-left',
+		'two-even-left': 'mupdf-two-pages-even-left',
+	};
 
 	constructor(leaf: WorkspaceLeaf, private plugin: PdfDuhPlugin) {
 		super(leaf);
@@ -67,6 +81,11 @@ export class PdfViewerView extends FileView {
 		return this.pageIndex;
 	}
 
+	/** Pages to advance per navigation step (2 in spread modes). */
+	private get pageStep(): number {
+		return this.layoutMode === 'single' ? 1 : 2;
+	}
+
 	async onOpen(): Promise<void> {
 		const { contentEl } = this;
 		contentEl.empty();
@@ -77,7 +96,7 @@ export class PdfViewerView extends FileView {
 		this.prevButtonEl = toolbarEl.createEl('button', { cls: 'clickable-icon' });
 		setIcon(this.prevButtonEl, 'chevron-left');
 		this.prevButtonEl.addEventListener('click', () => {
-			void this.goToPage(this.pageIndex - 1);
+			void this.goToPage(this.pageIndex - this.pageStep);
 		});
 
 		this.pageInputEl = toolbarEl.createEl('input', {
@@ -113,8 +132,36 @@ export class PdfViewerView extends FileView {
 		this.nextButtonEl = toolbarEl.createEl('button', { cls: 'clickable-icon' });
 		setIcon(this.nextButtonEl, 'chevron-right');
 		this.nextButtonEl.addEventListener('click', () => {
-			void this.goToPage(this.pageIndex + 1);
+			void this.goToPage(this.pageIndex + this.pageStep);
 		});
+
+		this.layoutButtons = {
+			single: toolbarEl.createEl('button', {
+				cls: 'clickable-icon mupdf-viewer-layout-button',
+				attr: { 'aria-label': 'Single page', title: 'Single page' },
+			}),
+			'two-odd-left': toolbarEl.createEl('button', {
+				cls: 'clickable-icon mupdf-viewer-layout-button',
+				attr: { 'aria-label': 'Two pages, odd on the left', title: 'Two pages, odd on the left' },
+			}),
+			'two-even-left': toolbarEl.createEl('button', {
+				cls: 'clickable-icon mupdf-viewer-layout-button',
+				attr: { 'aria-label': 'Two pages, even on the left', title: 'Two pages, even on the left' },
+			}),
+		};
+		for (const mode of Object.keys(this.layoutButtons) as PageLayoutMode[]) {
+			const button = this.layoutButtons[mode];
+			setIcon(button, PdfViewerView.LAYOUT_BUTTON_ICONS[mode]);
+			button.addEventListener('click', () => {
+				if (this.layoutMode === mode) {
+					return;
+				}
+				this.layoutMode = mode;
+				this.updateLayoutButtonStates();
+				void this.renderCurrent();
+			});
+		}
+		this.updateLayoutButtonStates();
 
 		toolbarEl.createDiv('mupdf-viewer-toolbar-spacer');
 
@@ -158,7 +205,11 @@ export class PdfViewerView extends FileView {
 			if (event.shiftKey) {
 				this.goToBookmark(key === 'n' ? 1 : -1);
 			} else {
-				void this.goToPage(key === 'n' ? this.pageIndex + 1 : this.pageIndex - 1);
+				void this.goToPage(
+					key === 'n'
+						? this.pageIndex + this.pageStep
+						: this.pageIndex - this.pageStep
+				);
 			}
 		});
 	}
@@ -267,6 +318,31 @@ export class PdfViewerView extends FileView {
 		void this.goToPage(target);
 	}
 
+	/** The first page index visible in the current layout at this.pageIndex. */
+	private firstVisiblePageIndex(): number {
+		if (this.layoutMode === 'single') {
+			return this.pageIndex;
+		}
+		if (this.layoutMode === 'two-even-left') {
+			// Even page number on the left: pageIndex 0 (page 1) sits alone
+			// on the right; the spread containing it starts at index -1.
+			if (this.pageIndex === 0) {
+				return -1;
+			}
+			return this.pageIndex % 2 === 1 ? this.pageIndex : this.pageIndex - 1;
+		}
+		// Odd page number on the left: spreads start at even indexes.
+		return this.pageIndex % 2 === 0 ? this.pageIndex : this.pageIndex - 1;
+	}
+
+	private updateLayoutButtonStates(): void {
+		for (const mode of Object.keys(this.layoutButtons) as PageLayoutMode[]) {
+			const button = this.layoutButtons[mode];
+			button.toggleClass('is-active', this.layoutMode === mode);
+			button.setAttribute('aria-pressed', this.layoutMode === mode ? 'true' : 'false');
+		}
+	}
+
 	private async renderCurrent(): Promise<void> {
 		if (!this.doc) {
 			return;
@@ -288,23 +364,53 @@ export class PdfViewerView extends FileView {
 				1,
 				Math.round(displayWidth * this.plugin.settings.renderScale)
 			);
-			const page = this.doc.renderPage(this.pageIndex, bitmapWidth);
-			this.canvasEl.width = page.width;
-			this.canvasEl.height = page.height;
+			const leftIndex = this.firstVisiblePageIndex();
+			const rightIndex = leftIndex + 1;
+			const twoUp = this.layoutMode !== 'single';
+			// In two-page mode each page gets half the panel width.
+			const pageBitmapWidth = twoUp
+				? Math.max(1, Math.round(bitmapWidth / 2))
+				: bitmapWidth;
+			const left =
+				leftIndex >= 0 && leftIndex < this.pageCount
+					? this.doc.renderPage(leftIndex, pageBitmapWidth)
+					: null;
+			// renderPage reuses a shared pixel buffer, so copy the left
+			// page out before rendering the right one over it.
+			if (left && twoUp) {
+				left.pixels = new Uint8ClampedArray(left.pixels);
+			}
+			const right =
+				twoUp && rightIndex >= 0 && rightIndex < this.pageCount
+					? this.doc.renderPage(rightIndex, pageBitmapWidth)
+					: null;
+			if (!left && !right) {
+				throw new Error('PDF Duh: nothing to render');
+			}
+			const composed = twoUp
+				? this.composeTwoPages(left, right)
+				: left!;
+			this.canvasEl.width = composed.width;
+			this.canvasEl.height = composed.height;
 			this.canvasEl.style.width = `${displayWidth}px`;
 			this.canvasEl.style.height = `${Math.round(
-				(displayWidth * page.height) / page.width
+				(displayWidth * composed.height) / composed.width
 			)}px`;
 			const ctx = this.canvasEl.getContext('2d');
 			if (!ctx) {
 				throw new Error('Canvas 2D context unavailable');
 			}
-			ctx.putImageData(new ImageData(page.pixels, page.width, page.height), 0, 0);
+			ctx.putImageData(
+				new ImageData(composed.pixels, composed.width, composed.height),
+				0,
+				0
+			);
 			this.pageInputEl.value = String(this.pageIndex + 1);
 			this.pageInputEl.disabled = false;
 			this.pageCountLabelEl.setText(`/ ${this.pageCount}`);
 			this.prevButtonEl.disabled = this.pageIndex <= 0;
-			this.nextButtonEl.disabled = this.pageIndex >= this.pageCount - 1;
+			this.nextButtonEl.disabled =
+				this.pageIndex + 1 >= this.pageCount;
 		} finally {
 			this.rendering = false;
 			if (this.renderQueued) {
@@ -324,6 +430,47 @@ export class PdfViewerView extends FileView {
 			parseFloat(cs.paddingLeft) -
 			parseFloat(cs.paddingRight);
 		return Math.round(available);
+	}
+
+	/**
+	 * Compose two pages side by side into one bitmap. A null side is
+	 * filled with white. Both pages were rendered at the same width, so
+	 * they share the same height unless the document has mixed page sizes;
+	 * the canvas uses the taller height and pages are top-aligned.
+	 */
+	private composeTwoPages(
+		left: RenderedPage | null,
+		right: RenderedPage | null
+	): RenderedPage {
+		const height = Math.max(
+			1,
+			Math.max(left ? left.height : 0, right ? right.height : 0)
+		);
+		const width = Math.max(
+			1,
+			(left ? left.width : 0) + (right ? right.width : 0)
+		);
+		const pixels = new Uint8ClampedArray(width * height * 4);
+		pixels.fill(255);
+		const paste = (page: RenderedPage, offsetX: number) => {
+			const copyWidth = Math.min(page.width, width - offsetX);
+			const copyHeight = Math.min(page.height, height);
+			for (let y = 0; y < copyHeight; y++) {
+				const srcBase = y * page.width * 4;
+				const dstBase = (offsetX + y * width) * 4;
+				pixels.set(
+					page.pixels.subarray(srcBase, srcBase + copyWidth * 4),
+					dstBase
+				);
+			}
+		};
+		if (left) {
+			paste(left, 0);
+		}
+		if (right) {
+			paste(right, left ? left.width : 0);
+		}
+		return { width: Math.max(1, width), height, pixels };
 	}
 
 	requestRender(): void {
