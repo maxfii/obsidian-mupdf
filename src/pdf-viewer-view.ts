@@ -74,12 +74,6 @@ export class PdfViewerView extends FileView {
 
 		const toolbarEl = contentEl.createDiv('mupdf-viewer-toolbar');
 
-		const listButton = toolbarEl.createEl('button', { cls: 'clickable-icon' });
-		setIcon(listButton, 'list');
-		listButton.addEventListener('click', () => {
-			void this.plugin.activatePdfListView();
-		});
-
 		this.prevButtonEl = toolbarEl.createEl('button', { cls: 'clickable-icon' });
 		setIcon(this.prevButtonEl, 'chevron-left');
 		this.prevButtonEl.addEventListener('click', () => {
