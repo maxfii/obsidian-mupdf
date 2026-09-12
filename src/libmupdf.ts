@@ -30,6 +30,7 @@ interface LibMupdf {
 	_wasm_drop_device(device: Ptr): void;
 	_wasm_pixmap_get_w(pixmap: Ptr): number;
 	_wasm_pixmap_get_h(pixmap: Ptr): number;
+	_wasm_pixmap_get_n(pixmap: Ptr): number;
 	_wasm_pixmap_get_stride(pixmap: Ptr): number;
 	_wasm_pixmap_get_samples(pixmap: Ptr): Ptr;
 	_wasm_drop_pixmap(pixmap: Ptr): void;
@@ -243,26 +244,48 @@ export class MupdfEngine {
 		const lib = this.lib;
 		const width = lib._wasm_pixmap_get_w(pixmapPtr);
 		const height = lib._wasm_pixmap_get_h(pixmapPtr);
+		const components = lib._wasm_pixmap_get_n(pixmapPtr);
 		const stride = lib._wasm_pixmap_get_stride(pixmapPtr);
 		const samplesPtr = lib._wasm_pixmap_get_samples(pixmapPtr);
-		const rowBytes = width * 4;
-		const out = new Uint8ClampedArray(rowBytes * height);
+		const rowBytes = width * components;
 		const src = new Uint8Array(
 			lib.HEAPU8.buffer,
 			samplesPtr,
 			stride * height
 		);
-		if (stride === rowBytes) {
-			out.set(src);
-		} else {
-			for (let y = 0; y < height; y++) {
-				out.set(
-					src.subarray(y * stride, y * stride + rowBytes),
-					y * rowBytes
-				);
+		if (components === 4) {
+			const out = new Uint8ClampedArray(rowBytes * height);
+			if (stride === rowBytes) {
+				out.set(src);
+			} else {
+				for (let y = 0; y < height; y++) {
+					out.set(
+						src.subarray(y * stride, y * stride + rowBytes),
+						y * rowBytes
+					);
+				}
 			}
+			return { width, height, pixels: out };
 		}
-		return { width, height, pixels: out };
+		if (components === 3) {
+			const out = new Uint8ClampedArray(width * 4 * height);
+			for (let y = 0; y < height; y++) {
+				let srcBase = y * stride;
+				let dstBase = y * width * 4;
+				for (let x = 0; x < width; x++) {
+					out[dstBase] = src[srcBase];
+					out[dstBase + 1] = src[srcBase + 1];
+					out[dstBase + 2] = src[srcBase + 2];
+					out[dstBase + 3] = 255;
+					srcBase += 3;
+					dstBase += 4;
+				}
+			}
+			return { width, height, pixels: out };
+		}
+		throw new Error(
+			`MuPDF pixmap has unsupported component count: ${components}`
+		);
 	}
 }
 
@@ -408,7 +431,7 @@ export class MupdfDocument {
 			const pixmapPtr = lib._wasm_new_pixmap_with_bbox(
 				engine.rgbPtr,
 				engine.writeRect([0, 0, bitmapWidth, bitmapHeight]),
-				true
+				false
 			);
 			if (!pixmapPtr) {
 				throw new Error('MuPDF failed to allocate pixmap');
