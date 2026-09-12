@@ -11,7 +11,11 @@ import type { RenderedPage } from './libmupdf';
 
 export const VIEW_TYPE_PDF_VIEWER = 'mupdf-viewer';
 
-export type PageLayoutMode = 'single' | 'two-odd-left' | 'two-even-left';
+export type PageLayoutMode =
+	| 'single'
+	| 'single-fit-height'
+	| 'two-odd-left'
+	| 'two-even-left';
 
 /**
  * The active PDF viewer, or the first open viewer with a document when no
@@ -56,6 +60,7 @@ export class PdfViewerView extends FileView {
 		string
 	> = {
 		single: 'rectangle-vertical',
+		'single-fit-height': 'stretch-vertical',
 		'two-odd-left': 'mupdf-two-pages-odd-left',
 		'two-even-left': 'mupdf-two-pages-even-left',
 	};
@@ -81,9 +86,17 @@ export class PdfViewerView extends FileView {
 		return this.pageIndex;
 	}
 
+	/** Whether the current layout shows a two-page spread. */
+	private get isTwoUp(): boolean {
+		return (
+			this.layoutMode === 'two-odd-left' ||
+			this.layoutMode === 'two-even-left'
+		);
+	}
+
 	/** Pages to advance per navigation step (2 in spread modes). */
 	private get pageStep(): number {
-		return this.layoutMode === 'single' ? 1 : 2;
+		return this.isTwoUp ? 2 : 1;
 	}
 
 	async onOpen(): Promise<void> {
@@ -138,7 +151,11 @@ export class PdfViewerView extends FileView {
 		this.layoutButtons = {
 			single: toolbarEl.createEl('button', {
 				cls: 'clickable-icon mupdf-viewer-layout-button',
-				attr: { 'aria-label': 'Single page', title: 'Single page' },
+				attr: { 'aria-label': 'Single page, fit width', title: 'Single page, fit width' },
+			}),
+			'single-fit-height': toolbarEl.createEl('button', {
+				cls: 'clickable-icon mupdf-viewer-layout-button',
+				attr: { 'aria-label': 'Single page, fit height', title: 'Single page, fit height' },
 			}),
 			'two-odd-left': toolbarEl.createEl('button', {
 				cls: 'clickable-icon mupdf-viewer-layout-button',
@@ -320,7 +337,7 @@ export class PdfViewerView extends FileView {
 
 	/** The first page index visible in the current layout at this.pageIndex. */
 	private firstVisiblePageIndex(): number {
-		if (this.layoutMode === 'single') {
+		if (!this.isTwoUp) {
 			return this.pageIndex;
 		}
 		if (this.layoutMode === 'two-even-left') {
@@ -366,11 +383,31 @@ export class PdfViewerView extends FileView {
 			);
 			const leftIndex = this.firstVisiblePageIndex();
 			const rightIndex = leftIndex + 1;
-			const twoUp = this.layoutMode !== 'single';
-			// In two-page mode each page gets half the panel width.
-			const pageBitmapWidth = twoUp
-				? Math.max(1, Math.round(bitmapWidth / 2))
-				: bitmapWidth;
+			const twoUp = this.isTwoUp;
+			const fitHeight = this.layoutMode === 'single-fit-height';
+			let pageBitmapWidth: number;
+			if (twoUp) {
+				// In two-page mode each page gets half the panel width.
+				pageBitmapWidth = Math.max(1, Math.round(bitmapWidth / 2));
+			} else if (fitHeight) {
+				// Scale by the pane height, so the bitmap width follows the
+				// page's aspect ratio.
+				const displayHeight = this.getAvailableHeight();
+				const bounds = this.doc.pageBounds(leftIndex);
+				const pageAspect =
+					Math.max(1, bounds[2] - bounds[0]) /
+					Math.max(1, bounds[3] - bounds[1]);
+				pageBitmapWidth = Math.max(
+					1,
+					Math.round(
+						displayHeight *
+							pageAspect *
+							this.plugin.settings.renderScale
+					)
+				);
+			} else {
+				pageBitmapWidth = bitmapWidth;
+			}
 			const left =
 				leftIndex >= 0 && leftIndex < this.pageCount
 					? this.doc.renderPage(leftIndex, pageBitmapWidth)
@@ -392,10 +429,18 @@ export class PdfViewerView extends FileView {
 				: left!;
 			this.canvasEl.width = composed.width;
 			this.canvasEl.height = composed.height;
-			this.canvasEl.style.width = `${displayWidth}px`;
-			this.canvasEl.style.height = `${Math.round(
-				(displayWidth * composed.height) / composed.width
-			)}px`;
+			if (fitHeight && !twoUp) {
+				const displayHeight = this.getAvailableHeight();
+				this.canvasEl.style.height = `${displayHeight}px`;
+				this.canvasEl.style.width = `${Math.round(
+					(displayHeight * composed.width) / composed.height
+				)}px`;
+			} else {
+				this.canvasEl.style.width = `${displayWidth}px`;
+				this.canvasEl.style.height = `${Math.round(
+					(displayWidth * composed.height) / composed.width
+				)}px`;
+			}
 			const ctx = this.canvasEl.getContext('2d');
 			if (!ctx) {
 				throw new Error('Canvas 2D context unavailable');
@@ -429,6 +474,18 @@ export class PdfViewerView extends FileView {
 			this.scrollEl.clientWidth -
 			parseFloat(cs.paddingLeft) -
 			parseFloat(cs.paddingRight);
+		return Math.round(available);
+	}
+
+	private getAvailableHeight(): number {
+		if (!this.scrollEl) {
+			return 0;
+		}
+		const cs = getComputedStyle(this.scrollEl);
+		const available =
+			this.scrollEl.clientHeight -
+			parseFloat(cs.paddingTop) -
+			parseFloat(cs.paddingBottom);
 		return Math.round(available);
 	}
 
